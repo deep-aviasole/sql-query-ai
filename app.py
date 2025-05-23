@@ -6,10 +6,12 @@ from langchain_community.vectorstores import FAISS
 from sentence_transformers import SentenceTransformer
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import HumanMessage, SystemMessage
-from langchain_groq import ChatGroq
-from dotenv import dotenv_values
+from langchain_groq import ChatGroq 
 from streamlit.watcher import local_sources_watcher
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Patch LocalSourcesWatcher to skip torch.classes
 original_get_module_paths = local_sources_watcher.get_module_paths
@@ -26,10 +28,10 @@ local_sources_watcher.get_module_paths = patched_get_module_paths
 
 # Load environment variables
 try:
-    env_vars = dotenv_values(".env")
-    GROQ_API_KEY = env_vars.get("GROQ_API_KEY")
-    SERVER = env_vars.get("SERVER")
-    DATABASE = env_vars.get("DATABASE")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    SERVER = os.getenv("SERVER")
+    DATABASE = os.getenv("DATABASE")
+    # print(GROQ_API_KEY)
     os.environ["HF_HOME"] = os.path.join(os.getcwd(), "hf_cache")
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 except Exception as e:
@@ -278,6 +280,11 @@ class NLtoSQL:
 
     def process_natural_language(self, query):
         try:
+            llm = ChatGroq(
+            api_key=GROQ_API_KEY,
+            model_name="llama3-70b-8192",
+            temperature=0.0,
+        )
             retrieved_docs = self.retriever.invoke(query)
             mentioned_tables = set()
             for doc in retrieved_docs:
